@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "libnss-keycloak"
+version = "0.1.0"
+description = ""
+authors = ["Alex Wright <alexwright1324@gmail.com>"]
+# readme = "README.md"
+# license = "BSD"
+packages = [
+  { include = "app" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-keycloak = "^4.2.2"
+toml = "^0.10.2"
+
+[tool.poetry.scripts]
+libnss-keycloak = "app.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
