@@ -1,32 +1,58 @@
-import os, toml
+import os
+import toml
 from dataclasses import dataclass
 
 configFile = os.getenv("configFile", "config.toml")
+socketPath = os.getenv("socketPath", "libnss-keycloak.sock")
+validChars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+IDString = "libnss-keycloak-unixID"
+initialUID = 1_000_000
+
 
 @dataclass
-class Group:
-    name: str
+class Default:
     gid: int
+    shell: str
+    home: str
+
 
 @dataclass
-class Config:
+class Service:
+    socketPath: str
+    updateInterval: int
+
+
+@dataclass
+class KeycloakAdminConfig:
     server: str
     username: str
     password: str
     realm: str
-    groups: list[Group]
+
+
+@dataclass
+class Config:
+    service: Service
+    keycloak: KeycloakAdminConfig
+    default: Default
+
 
 def getConfig() -> Config:
     configDict = toml.load(configFile)
 
-    groups = []
-    for groupName, groupDict in configDict["group"].items():
-        groups.append(Group(groupName, groupDict["gid"]))
-
-    return Config(
-        configDict["server"],
-        configDict["username"],
-        configDict["password"],
-        configDict["realm"],
-        groups
+    default = Default(
+        configDict["default"]["gid"],
+        configDict["default"]["shell"],
+        configDict["default"]["home"],
     )
+
+    service = Service(socketPath, configDict["service"]["updateInterval"])
+
+    keycloak = KeycloakAdminConfig(
+        configDict["keycloak"]["server"],
+        configDict["keycloak"]["username"],
+        configDict["keycloak"]["password"],
+        configDict["keycloak"]["realm"],
+    )
+
+    return Config(service, keycloak, default)

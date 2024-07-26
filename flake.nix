@@ -41,6 +41,7 @@
           let
             libnss-keycloak = perSystem.config.packages.default;
             cfg = config.users.libnss-keycloak;
+            socketPath = "/var/run/libnss-keycloak/libnss-keycloak.sock";
           in {
             imports = [ inputs.libnss_shim.nixosModules.default ];
 
@@ -64,21 +65,21 @@
                     group = {
                       functions = {
                         get_all_entries = {
-                          command = "${libnss-keycloak}/bin/libnss-keycloak groupAll";
+                          command = "/etc/libnss_shim/libnss-keycloak-groupAll.sh";
                         };
 
                         get_entry_by_gid = {
-                          command = "${libnss-keycloak}/bin/libnss-keycloak groupID";
+                          command = "/etc/libnss_shim/libnss-keycloak-groupID.sh";
                         };
 
                         get_entry_by_name = {
-                          command = "${libnss-keycloak}/bin/libnss-keycloak groupName";
+                          command = "/etc/libnss_shim/libnss-keycloak-groupName.sh";
                         };
                       };
 
                       env = {
-                        groupID = "<$gid>";
-                        groupName = "<$name>";
+                        id = "<$gid>";
+                        name = "<$name>";
                         configFile = "/etc/libnss_shim/libnss-keycloak.toml";
                       };
                     };
@@ -86,20 +87,20 @@
                     passwd = {
                       functions = {
                         get_all_entries = {
-                        command = "${libnss-keycloak}/bin/libnss-keycloak passwdAll";
+                          command = "/etc/libnss_shim/libnss-keycloak-passwdAll.sh";
                         };
 
                         get_entry_by_uid = {
-                          command = "${libnss-keycloak}/bin/libnss-keycloak passwdID";
+                          command = "/etc/libnss_shim/libnss-keycloak-passwdID.sh";
                         };
 
                         get_entry_by_name = {
-                          command = "${libnss-keycloak}/bin/libnss-keycloak passwdName";
+                          command = "/etc/libnss_shim/libnss-keycloak-passwdName.sh";
                         };
                       };
                       env = {
-                        userID = "<$uid>";
-                        userName = "<$name>";
+                        id = "<$uid>";
+                        name = "<$name>";
                         configFile = "/etc/libnss_shim/libnss-keycloak.toml";
                       };
                     };
@@ -112,11 +113,74 @@
                 };
               };
 
-              environment.etc."libnss_shim/libnss-keycloak.toml" = {
-                source = cfg.configToml;
-                user = "nscd";
-                group = "nscd";
-                mode = "0440";
+              systemd.services.libnss-keycloak = {
+                enable = true;
+                wantedBy = [ "nscd.service" ];
+                description = "libnss-keycloak nsswitch module using libnss_shim";
+                environment = {
+                  configFile = "/etc/libnss_shim/libnss-keycloak.toml";
+                  inherit socketPath;
+                };
+                serviceConfig = {
+                  Type = "simple";
+                  User = "nscd";
+                  ExecStart = "${libnss-keycloak}/bin/libnss-keycloak";
+                  RuntimeDirectory = "libnss-keycloak";
+                };
+              };
+
+              environment.etc = let
+                  mode = "0555";
+                in
+                {
+                "libnss_shim/libnss-keycloak.toml" = {
+                  source = cfg.configToml;
+                  user = "nscd";
+                  group = "nscd";
+                  mode = "0440";
+                };
+                "libnss_shim/libnss-keycloak-passwdAll.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "passwdAll" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
+                "libnss_shim/libnss-keycloak-groupAll.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "groupAll" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
+                "libnss_shim/libnss-keycloak-passwdID.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "passwdID $id" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
+                "libnss_shim/libnss-keycloak-groupID.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "groupID $id" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
+                "libnss_shim/libnss-keycloak-passwdName.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "passwdName $name" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
+                "libnss_shim/libnss-keycloak-groupName.sh" = {
+                  text = ''
+                    #!/bin/sh
+                    echo -n "groupName $name" | nc -U ${socketPath} 2>/dev/null
+                  '';
+                  inherit mode;
+                };
               };
             };
         });
@@ -130,7 +194,7 @@
               ({ pkgs, ... }: {
                 boot.isContainer = true;
                 users.libnss-keycloak.enable = true;
-                users.libnss-keycloak.configToml.source = ./config.toml;
+                users.libnss-keycloak.configToml = ./config.toml;
                 environment.systemPackages = with pkgs; [
                   htop
                 ];

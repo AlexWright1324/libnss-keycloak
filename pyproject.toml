@@ -15,8 +15,16 @@ python-keycloak = "^4.2.2"
 toml = "^0.10.2"
 
 [tool.poetry.scripts]
-libnss-keycloak = "app.main:main"
+libnss-keycloak = "app.service:main"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+flake8 = "^7.1.0"
+flake8-pyproject = "^1.2.3"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.flake8]
+max-line-length = 120
