@@ -59,11 +59,13 @@ class ClientContext:
     async def updater(self):
         while True:
 
-            self.users = UserList()
-            await self.users.populate(self.ka)
+            newUsers = UserList()
+            await newUsers.populate(self.ka)
+            self.users = newUsers
 
-            self.groups = GroupList()
-            await self.groups.populate(self.ka)
+            newGroups = GroupList()
+            await newGroups.populate(self.ka)
+            self.groups = newGroups
 
             print("Updated!")
 

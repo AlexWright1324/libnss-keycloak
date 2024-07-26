@@ -115,15 +115,19 @@
 
               systemd.services.libnss-keycloak = {
                 enable = true;
-                wantedBy = [ "nscd.service" ];
                 description = "libnss-keycloak nsswitch module using libnss_shim";
+                before = [ "nss-lookup.target" "nss-user-lookup.target" ];
+                wants = [ "nss-lookup.target" "nss-user-lookup.target" ];
+                wantedBy = [ "multi-user.target" ];
                 environment = {
+                  PYTHONUNBUFFERED = "1";
                   configFile = "/etc/libnss_shim/libnss-keycloak.toml";
                   inherit socketPath;
                 };
                 serviceConfig = {
                   Type = "simple";
                   User = "nscd";
+                  Group = "nscd";
                   ExecStart = "${libnss-keycloak}/bin/libnss-keycloak";
                   RuntimeDirectory = "libnss-keycloak";
                 };
@@ -193,11 +197,13 @@
               flake.nixosModules.default
               ({ pkgs, ... }: {
                 boot.isContainer = true;
+                networking.firewall.enable = false;
                 users.libnss-keycloak.enable = true;
                 users.libnss-keycloak.configToml = ./config.toml;
                 environment.systemPackages = with pkgs; [
                   htop
                 ];
+                system.stateVersion = "24.05";
               })
             ];
           };
