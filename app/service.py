@@ -11,6 +11,8 @@ async def startServer(config: Config):
 
     service = await asyncio.start_unix_server(ctx.handler, config.service.socketPath)
 
+    os.chmod(config.service.socketPath, 0o777)
+
     print(f"Listening at {config.service.socketPath}")
 
     try:
