@@ -13,7 +13,7 @@ class Group:
 
     def toGroup(self, config: Default):
         # name:password:gid:members
-        return ":".join([self.name, "x", str(self.gid), ",".join(self.members)])
+        return ":".join([self.name, "!", str(self.gid), ",".join(self.members)])
 
 
 class GroupList:

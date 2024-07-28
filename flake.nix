@@ -113,12 +113,14 @@
                 };
               };
 
+              # Hacky method
+              systemd.services.nscd.path = with pkgs; [ bash netcat ];
+
               systemd.services.libnss-keycloak = {
                 enable = true;
                 description = "libnss-keycloak nsswitch module using libnss_shim";
-                before = [ "nss-lookup.target" "nss-user-lookup.target" ];
-                wants = [ "nss-lookup.target" "nss-user-lookup.target" ];
-                wantedBy = [ "multi-user.target" ];
+                wants = [ "network-online.target" ];
+                after = [ "network-online.target" ];
                 environment = {
                   PYTHONUNBUFFERED = "1";
                   configFile = "/etc/libnss_shim/libnss-keycloak.toml";

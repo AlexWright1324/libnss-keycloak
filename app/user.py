@@ -17,7 +17,7 @@ class User:
         return ":".join(
             [
                 self.username,
-                "x",
+                "!",
                 str(self.uid),
                 str(config.gid),
                 " ".join(filter(None, [self.firstName, self.lastName])),
